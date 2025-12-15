@@ -1,0 +1,17 @@
+{
+  "name": "Tech Brian’s Digital Christmas Card Generator",
+  "short_name": "Xmas Card Gen",
+  "description": "Create romantic hacker-themed Christmas cards",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#2b001b",
+  "theme_color": "#ff00aa",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "https://files.catbox.moe/b3v2o4.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg"
+    }
+  ]
+}
