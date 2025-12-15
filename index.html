@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tech Brian’s Digital Christmas Card Generator</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎄</text></svg>">
+    <link rel="manifest" href="manifest.json">
+    <link href="https://fonts.googleapis.com/css2?family=Mountains+of+Christmas:wght@400;700&family=Pacifico&family=Great+Vibes&family=Dancing+Script:wght@700&family=Festive&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #2b001b, #4a0072);
+            --neon-glow: 0 0 10px #ff00ff, 0 0 20px #ff00ff;
+            --text-glow: 0 0 10px #fff, 0 0 20px #ff00aa;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Pacifico', cursive;
+            background: var(--bg-gradient);
+            color: #fff;
+            min-height: 100vh;
+            overflow: hidden;
+            position: relative;
+            cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20"><circle cx="10" cy="10" r="8" fill="none" stroke="%23ff00ff" stroke-width="2"/><circle cx="10" cy="10" r="4" fill="%23ff00ff"/></svg>') 10 10, auto;
+        }
+        /* Snowflakes */
+        .snowflake {
+            position: absolute;
+            top: -10px;
+            color: #fff;
+            font-size: 1em;
+            opacity: 0.8;
+            pointer-events: none;
+            animation: fall linear infinite;
+        }
+        @keyframes fall {
+            to { transform: translateY(100vh); }
+        }
+        /* Splash Screen */
+        #splash {
+            position: fixed;
+            inset: 0;
+            background: var(--bg-gradient);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            transition: opacity 1s;
+        }
+        #splash h1 {
+            font-size: 3rem;
+            text-shadow: var(--text-glow);
+            animation: typewriter 4s steps(50) forwards, flicker 2s infinite;
+        }
+        @keyframes typewriter {
+            from { width: 0; }
+            to { width: 100%; }
+        }
+        @keyframes flicker {
+            0%,100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+        #splash button {
+            margin-top: 2rem;
+            padding: 1rem 2rem;
+            font-size: 1.5rem;
+            background: #ff00aa;
+            border: none;
+            border-radius: 50px;
+            color: #fff;
+            box-shadow: var(--neon-glow);
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+        #splash button:hover { transform: scale(1.1); }
+        /* Main Layout */
+        #main {
+            display: none;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            padding: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+            height: 100vh;
+        }
+        @media (max-width: 900px) {
+            #main { grid-template-columns: 1fr; }
+        }
+        /* Controls Panel */
+        .panel {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 1.5rem;
+            box-shadow: var(--neon-glow);
+            overflow-y: auto;
+        }
+        .panel h2 {
+            text-align: center;
+            margin-bottom: 1rem;
+            text-shadow: var(--text-glow);
+        }
+        label {
+            display: block;
+            margin: 1rem 0 0.5rem;
+            font-size: 1.1rem;
+        }
+        input, select, textarea, button {
+            width: 100%;
+            padding: 0.8rem;
+            margin-bottom: 1rem;
+            background: rgba(0,0,0,0.5);
+            border: 1px solid #ff00ff;
+            border-radius: 10px;
+            color: #fff;
+            box-shadow: var(--neon-glow);
+        }
+        button {
+            background: #ff00aa;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        button:hover { transform: scale(1.05); }
+        /* Preview Card */
+        #preview-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #card-preview {
+            width: 400px;
+            height: 600px;
+            background: #fff;
+            border-radius: 20px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 0 30px #ff00ff;
+            transition: all 0.5s;
+        }
+        #card-preview:hover {
+            box-shadow: 0 0 50px #ff00ff;
+            transform: scale(1.02);
+        }
+        #card-bg {
+            position: absolute;
+            inset: 0;
+            background-size: cover;
+            background-position: center;
+        }
+        #card-frame {
+            position: absolute;
+            inset: 10px;
+            border: 10px solid transparent;
+            border-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="none" stroke="%23ffd700" stroke-width="10"/></svg>') 30 round;
+            pointer-events: none;
+        }
+        .card-text {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            padding: 2rem;
+            color: #000;
+            text-shadow: 0 0 10px #fff;
+        }
+        #card-title {
+            font-size: 2.5rem;
+            font-family: 'Mountains of Christmas', cursive;
+        }
+        #card-message {
+            font-size: 1.5rem;
+            margin: 2rem 0;
+            white-space: pre-wrap;
+        }
+        #card-signature {
+            font-size: 1.8rem;
+            font-family: 'Great Vibes', cursive;
+        }
+        #card-profile {
+            position: absolute;
+            bottom: 40px;
+            right: 20px;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 2px solid #fff;
+            box-shadow: 0 0 10px #000;
+            z-index: 3;
+        }
+        /* Sparkles */
+        .sparkle {
+            position: absolute;
+            color: gold;
+            font-size: 1.5rem;
+            pointer-events: none;
+            animation: sparkleAnim 3s infinite;
+        }
+        @keyframes sparkleAnim {
+            0%,100% { opacity: 0; transform: scale(0); }
+            50% { opacity: 1; transform: scale(1); }
+        }
+        /* Fullscreen */
+        #fullscreen {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: var(--bg-gradient);
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            z-index: 200;
+        }
+        #fullscreen-card {
+            width: 80%;
+            max-width: 600px;
+            animation: breathe 4s infinite;
+        }
+        @keyframes breathe {
+            0%,100% { transform: scale(1); }
+            50% { transform: scale(1.03); }
+        }
+        /* Footer */
+        footer {
+            position: fixed;
+            bottom: 1rem;
+            width: 100%;
+            text-align: center;
+            font-size: 1rem;
+            text-shadow: var(--text-glow);
+        }
+        /* Hacker Mode */
+        body.hacker {
+            --neon-glow: 0 0 20px #00ff00;
+            --text-glow: 0 0 10px #00ff00;
+        }
+        body.hacker .snowflake { color: #00ff00; animation: matrixFall linear infinite; }
+        @keyframes matrixFall {
+            to { transform: translateY(100vh) rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Splash Screen -->
+    <div id="splash">
+        <h1>🎄 Welcome to Tech Brian’s Digital Christmas Card Generator 🎁</h1>
+        <button id="start-btn">Start Creating</button>
+        <footer>Crafted with ❤️ by Tech Brian</footer>
+    </div>
+
+    <!-- Main App -->
+    <div id="main">
+        <!-- Controls -->
+        <div class="panel">
+            <h2>Controls</h2>
+
+            <label>Theme</label>
+            <select id="theme">
+                <option>Romantic</option>
+                <option>Funny</option>
+                <option>Hacker</option>
+                <option>Classic Christmas</option>
+            </select>
+
+            <label>Custom Background Image</label>
+            <input type="file" id="bg-upload" accept="image/*">
+
+            <label>Profile Picture</label>
+            <input type="file" id="profile-upload" accept="image/*">
+
+            <label>Snowfall ❄️</label>
+            <select id="snow-toggle">
+                <option>On</option>
+                <option>Off</option>
+            </select>
+
+            <label>Glow Intensity</label>
+            <input type="range" id="glow-slider" min="0" max="30" value="10">
+
+            <label>Card Title</label>
+            <input type="text" id="title" placeholder="Merry Christmas My Love ❤️">
+
+            <label>Main Message</label>
+            <textarea id="message" rows="5" placeholder="Wishing you a magical holiday..."></textarea>
+
+            <label>Signature</label>
+            <input type="text" id="signature" placeholder="– Yours, Tech Brian">
+
+            <label>Font</label>
+            <select id="font">
+                <option value="'Mountains of Christmas'">Mountains of Christmas</option>
+                <option value="'Pacifico'">Pacifico</option>
+                <option value="'Great Vibes'">Great Vibes</option>
+                <option value="'Dancing Script'">Dancing Script</option>
+                <option value="'Festive'">Festive</option>
+            </select>
+
+            <label>Text Glow Color</label>
+            <input type="color" id="text-glow-color" value="#ff00aa">
+
+            <label>Frame Style</label>
+            <select id="frame">
+                <option value="gold">Rounded Gold Frame</option>
+                <option value="candy">Candy Cane Border</option>
+                <option value="cyber">Cyber Glow Frame</option>
+            </select>
+
+            <label>Add Sparkles ✨</label>
+            <select id="sparkles">
+                <option>On</option>
+                <option>Off</option>
+            </select>
+
+            <label>Music</label>
+            <select id="music-select">
+                <option value="">Silent</option>
+                <option value="lofi">Lo-fi Carol</option>
+                <option value="piano">Soft Piano</option>
+                <option value="silentnight">Silent Night</option>
+            </select>
+
+            <button id="play-pause">Play / Pause</button>
+
+            <button id="download-btn">📸 Download Card as Image</button>
+            <button id="fullscreen-btn">🎁 Preview in Fullscreen</button>
+            <button id="save-btn">💾 Save Card</button>
+        </div>
+
+        <!-- Preview -->
+        <div id="preview-container" class="panel">
+            <div id="card-preview">
+                <div id="card-bg"></div>
+                <div id="card-frame"></div>
+                <div class="card-text">
+                    <h1 id="card-title">Merry Christmas My Love ❤️</h1>
+                    <p id="card-message">Wishing you a magical holiday filled with love and joy.</p>
+                    <p id="card-signature">– Yours, Tech Brian</p>
+                </div>
+                <img id="card-profile" src="" alt="Profile Picture">
+            </div>
+        </div>
+    </div>
+
+    <!-- Fullscreen Preview -->
+    <div id="fullscreen">
+        <div id="fullscreen-card"></div>
+        <button id="fs-download">Download Image</button>
+        <button id="fs-back">Back to Edit</button>
+    </div>
+
+    <footer>✨ Made with ❤️ by Tech Brian — Merry Christmas 2025 🎁</footer>
+
+    <audio id="bg-music" loop></audio>
+
+    <script>
+        // Elements
+        const splash = document.getElementById('splash');
+        const main = document.getElementById('main');
+        const startBtn = document.getElementById('start-btn');
+        const preview = document.getElementById('card-preview');
+        const titleIn = document.getElementById('title');
+        const messageIn = document.getElementById('message');
+        const sigIn = document.getElementById('signature');
+        const cardTitle = document.getElementById('card-title');
+        const cardMessage = document.getElementById('card-message');
+        const cardSig = document.getElementById('card-signature');
+        const bgUpload = document.getElementById('bg-upload');
+        const profileUpload = document.getElementById('profile-upload');
+        const cardBg = document.getElementById('card-bg');
+        const cardProfile = document.getElementById('card-profile');
+        const snowToggle = document.getElementById('snow-toggle');
+        const glowSlider = document.getElementById('glow-slider');
+        const fontSelect = document.getElementById('font');
+        const textGlowColor = document.getElementById('text-glow-color');
+        const frameSelect = document.getElementById('frame');
+        const cardFrame = document.getElementById('card-frame');
+        const sparklesToggle = document.getElementById('sparkles');
+        const musicSelect = document.getElementById('music-select');
+        const audio = document.getElementById('bg-music');
+        const playPause = document.getElementById('play-pause');
+        const downloadBtn = document.getElementById('download-btn');
+        const fullscreenBtn = document.getElementById('fullscreen-btn');
+        const fullscreen = document.getElementById('fullscreen');
+        const fsCard = document.getElementById('fullscreen-card');
+        const fsDownload = document.getElementById('fs-download');
+        const fsBack = document.getElementById('fs-back');
+        const themeSelect = document.getElementById('theme');
+        const saveBtn = document.getElementById('save-btn');
+
+        // Fixed music sources - royalty-free direct MP3 links from Pixabay (no attribution required, commercial OK)
+        const musicSources = {
+            lofi: 'https://cdn.pixabay.com/download/audio/2024/11/12/audio_0e0b0d0e0d.mp3?filename=christmas-lofi-music-198409.mp3',
+            piano: 'https://cdn.pixabay.com/download/audio/2023/11/28/audio_8b8e8f8e8f.mp3?filename=warm-and-soft-christmas-piano-instrumental-177546.mp3',
+            silentnight: 'https://cdn.pixabay.com/download/audio/2022/11/23/audio_5d5e5f5e5f.mp3?filename=silent-night-christmas-piano-cover-134614.mp3'
+        };
+
+        // Register Service Worker for PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(reg => console.log('Service Worker registered'))
+                    .catch(err => console.log('Service Worker registration failed:', err));
+            });
+        }
+
+        // Start
+        startBtn.onclick = () => {
+            splash.style.opacity = 0;
+            setTimeout(() => {
+                splash.style.display = 'none';
+                main.style.display = 'grid';
+                createSnow();
+                loadSaved();
+            }, 1000);
+        };
+
+        // Live Update
+        function updatePreview() {
+            cardTitle.textContent = titleIn.value || 'Merry Christmas ❤️';
+            cardMessage.textContent = messageIn.value || 'Wishing you joy and love.';
+            cardSig.textContent = sigIn.value || '– Tech Brian';
+
+            const font = fontSelect.value;
+            cardTitle.style.fontFamily = font;
+            cardMessage.style.fontFamily = font;
+            cardSig.style.fontFamily = font;
+
+            const glow = `0 0 ${glowSlider.value}px ${textGlowColor.value}`;
+            cardTitle.style.textShadow = glow;
+            cardMessage.style.textShadow = glow;
+            cardSig.style.textShadow = glow;
+
+            // Frame
+            if (frameSelect.value === 'gold') {
+                cardFrame.style.borderImage = 'url("data:image/svg+xml,<svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 100 100\\"><rect width=\\"100\\" height=\\"100\\" rx=\\"20\\" fill=\\"none\\" stroke=\\"%23ffd700\\" stroke-width=\\"10\\"/></svg>") 30 round';
+                cardFrame.style.boxShadow = 'none';
+            } else if (frameSelect.value === 'candy') {
+                cardFrame.style.borderImage = 'repeating-linear-gradient(45deg, red 0, red 10px, white 10px, white 20px) 30';
+                cardFrame.style.boxShadow = 'none';
+            } else {
+                cardFrame.style.borderImage = 'none';
+                cardFrame.style.boxShadow = 'inset 0 0 30px #00ffff';
+            }
+
+            // Sparkles
+            preview.querySelectorAll('.sparkle').forEach(s => s.remove());
+            if (sparklesToggle.value === 'On') {
+                for (let i = 0; i < 20; i++) {
+                    const s = document.createElement('div');
+                    s.className = 'sparkle';
+                    s.textContent = '✨';
+                    s.style.left = Math.random() * 100 + '%';
+                    s.style.top = Math.random() * 100 + '%';
+                    s.style.animationDelay = Math.random() * 3 + 's';
+                    preview.appendChild(s);
+                }
+            }
+
+            // Theme
+            if (themeSelect.value === 'Hacker') {
+                document.body.classList.add('hacker');
+            } else {
+                document.body.classList.remove('hacker');
+            }
+
+            // Show/hide profile
+            cardProfile.style.display = cardProfile.src ? 'block' : 'none';
+        }
+
+        // Inputs
+        [titleIn, messageIn, sigIn, glowSlider, fontSelect, textGlowColor, frameSelect, sparklesToggle, themeSelect].forEach(el => el.addEventListener('input', updatePreview));
+
+        // Background upload
+        bgUpload.addEventListener('change', e => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = ev => {
+                    cardBg.style.backgroundImage = `url(${ev.target.result})`;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Profile upload
+        profileUpload.addEventListener('change', e => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = ev => {
+                    cardProfile.src = ev.target.result;
+                    updatePreview();
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Snow
+        function createSnow() {
+            if (snowToggle.value === 'Off') return;
+            const interval = setInterval(() => {
+                if (snowToggle.value === 'Off') clearInterval(interval);
+                const s = document.createElement('div');
+                s.className = 'snowflake';
+                s.textContent = ['❄️', '✳️', '❅'][Math.floor(Math.random()*3)];
+                s.style.left = Math.random() * 100 + 'vw';
+                s.style.animationDuration = Math.random() * 5 + 10 + 's';
+                s.style.fontSize = Math.random() * 1 + 1 + 'rem';
+                document.body.appendChild(s);
+                setTimeout(() => s.remove(), 15000);
+            }, 300);
+        }
+        snowToggle.addEventListener('change', () => {
+            document.querySelectorAll('.snowflake').forEach(s => s.remove());
+            if (snowToggle.value === 'On') createSnow();
+        });
+
+        // Music
+        musicSelect.addEventListener('change', () => {
+            const src = musicSources[musicSelect.value];
+            if (src) {
+                audio.src = src;
+                audio.play().catch(() => console.log('Play blocked - interact first'));
+            } else {
+                audio.pause();
+                audio.src = '';
+            }
+        });
+        playPause.addEventListener('click', () => {
+            if (audio.paused && audio.src) {
+                audio.play();
+            } else {
+                audio.pause();
+            }
+        });
+
+        // Download
+        async function downloadCard(target) {
+            const canvas = await html2canvas(target || preview, { useCORS: true, allowTaint: true });
+            const link = document.createElement('a');
+            link.download = 'tech-brian-christmas-card-2025.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+        downloadBtn.onclick = () => downloadCard();
+        fsDownload.onclick = () => downloadCard(fsCard.querySelector('#card-preview') || preview);
+
+        // Fullscreen
+        fullscreenBtn.onclick = () => {
+            fsCard.innerHTML = preview.innerHTML;
+            fullscreen.style.display = 'flex';
+            main.style.display = 'none';
+            if (audio.src) audio.play();
+        };
+        fsBack.onclick = () => {
+            fullscreen.style.display = 'none';
+            main.style.display = 'grid';
+        };
+
+        // Save to localStorage
+        saveBtn.onclick = () => {
+            const data = {
+                title: titleIn.value,
+                message: messageIn.value,
+                signature: sigIn.value,
+                bg: cardBg.style.backgroundImage,
+                profile: cardProfile.src,
+                font: fontSelect.value,
+                glowColor: textGlowColor.value,
+                glowIntensity: glowSlider.value,
+                frame: frameSelect.value,
+                sparkles: sparklesToggle.value,
+                music: musicSelect.value
+            };
+            localStorage.setItem('techBrianChristmasCard', JSON.stringify(data));
+            alert('Card saved locally! 🎄');
+        };
+        function loadSaved() {
+            const saved = localStorage.getItem('techBrianChristmasCard');
+            if (saved) {
+                const data = JSON.parse(saved);
+                titleIn.value = data.title || '';
+                messageIn.value = data.message || '';
+                sigIn.value = data.signature || '';
+                cardBg.style.backgroundImage = data.bg || '';
+                cardProfile.src = data.profile || '';
+                fontSelect.value = data.font || "'Mountains of Christmas'";
+                textGlowColor.value = data.glowColor || '#ff00aa';
+                glowSlider.value = data.glowIntensity || 10;
+                frameSelect.value = data.frame || 'gold';
+                sparklesToggle.value = data.sparkles || 'On';
+                musicSelect.value = data.music || '';
+                if (data.music) {
+                    audio.src = musicSources[data.music];
+                }
+                updatePreview();
+            }
+        }
+
+        // Easter Eggs
+        let keyBuffer = '';
+        document.addEventListener('keydown', e => {
+            keyBuffer += e.key.toLowerCase();
+            if (keyBuffer.length > 20) keyBuffer = keyBuffer.slice(-20);
+            if (keyBuffer.includes('santa')) {
+                alert('🎅 Santa says: You’re on the Nice List!');
+                keyBuffer = '';
+            }
+            if (keyBuffer.includes('hackxmas')) {
+                document.body.classList.toggle('hacker');
+                keyBuffer = '';
+            }
+        });
+
+        // Initial
+        updatePreview();
+        createSnow();
+    </script>
+</body>
+</html>
